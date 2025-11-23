@@ -1,0 +1,29 @@
+# Production overrides
+
+app:
+  replicas: 10
+  image:
+    tag: "v1.0.0"  # Use specific version in production
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+autoscaling:
+  minReplicas: 10
+  maxReplicas: 100
+  targetCPUUtilization: 70
+  targetMemoryUtilization: 80
+
+podDisruptionBudget:
+  minAvailable: 90%
+
+# Production service account with Workload Identity
+serviceAccount:
+  annotations:
+    iam.gke.io/gcp-service-account: transport-api-prod@my-project.iam.gserviceaccount.com

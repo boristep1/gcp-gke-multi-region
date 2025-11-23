@@ -1,0 +1,56 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+name: transport-api-network-policy
+namespace: default
+spec:
+podSelector:
+matchLabels:
+app: transport-api
+
+policyTypes:
+- Ingress
+- Egress
+
+ingress:
+# Allow traffic from ingress controller
+- from:
+- namespaceSelector:
+matchLabels:
+name: ingress-nginx
+ports:
+- protocol: TCP
+port: 8000
+
+# Allow traffic from same namespace (for service mesh)
+- from:
+    - podSelector: {}
+  ports:
+    - protocol: TCP
+      port: 8000
+egress:
+# Allow DNS
+- to:
+- namespaceSelector:
+matchLabels:
+name: kube-system
+- podSelector:
+matchLabels:
+k8s-app: kube-dns
+ports:
+- protocol: UDP
+port: 53
+
+# Allow HTTPS to GCP APIs
+- to:
+    - podSelector: {}
+  ports:
+    - protocol: TCP
+      port: 443
+
+# Allow access to Firestore/BigQuery (via GCP Private Google Access)
+- to:
+    - namespaceSelector: {}
+  ports:
+    - protocol: TCP
+      port: 443

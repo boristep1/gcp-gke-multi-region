@@ -1,0 +1,152 @@
+# Default values for transport-api
+
+# Application configuration
+app:
+  name: transport-api
+  replicas: 5
+  
+  image:
+    repository: europe-west1-docker.pkg.dev/my-project/transport-api/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  # Resource requests and limits
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  
+  # Environment variables
+  env:
+    - name: PROJECT_ID
+      value: "my-project"
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "INFO"
+
+# ESPv2 sidecar configuration
+esp:
+  enabled: true
+  
+  image:
+    repository: gcr.io/endpoints-release/endpoints-runtime
+    tag: "2"
+  
+  # Cloud Endpoints service name
+  service: transport.endpoints.my-project.cloud.goog
+  
+  # Rollout strategy
+  rolloutStrategy: managed
+  
+  # Resources for ESP container
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: true
+  minReplicas: 5
+  maxReplicas: 50
+  
+  # Target utilization percentages
+  targetCPUUtilization: 60
+  targetMemoryUtilization: 80
+  
+  # Scaling behavior
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+        - type: Pods
+          value: 4
+          periodSeconds: 30
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 80%
+
+# Priority Class
+priorityClass:
+  enabled: true
+  name: transport-api-priority
+  value: 100000
+  description: "High priority for transport API pods"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000  # ESPv2 port
+  annotations: {}
+
+# Service Account
+serviceAccount:
+  create: true
+  name: transport-api-sa
+  annotations:
+    # Workload Identity annotation
+    iam.gke.io/gcp-service-account: transport-api@my-project.iam.gserviceaccount.com
+
+# Pod topology spread
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app: transport-api
+
+# Pod affinity/anti-affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: transport-api
+          topologyKey: kubernetes.io/hostname
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Probes
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 2

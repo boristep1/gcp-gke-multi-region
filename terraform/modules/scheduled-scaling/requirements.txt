@@ -1,0 +1,3 @@
+google-cloud-container==2.35.0
+kubernetes==28.1.0
+functions-framework==3.5.0

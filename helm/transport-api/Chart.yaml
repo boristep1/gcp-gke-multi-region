@@ -1,0 +1,14 @@
+apiVersion: v2
+name: transport-api
+description: Public transport API with ESPv2 sidecar for GKE
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - gke
+  - espv2
+  - api
+  - transport
+maintainers:
+  - name: Your Name
+    email: your.email@example.com
